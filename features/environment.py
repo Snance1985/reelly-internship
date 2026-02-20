@@ -1,3 +1,4 @@
+import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.firefox.service import Service as FirefoxService
@@ -9,9 +10,42 @@ from webdriver_manager.firefox import GeckoDriverManager
 from app.application import Application
 
 
-def browser_init(context, browser_name="chrome", headless=False):
+def browser_init(context, browser_name="browserstack", headless=False):
 
-    if browser_name.lower() == "chrome":
+    browser_name = browser_name.lower()
+
+    # ======================================================
+    # BROWSERSTACK (MacOS + Firefox)
+    # ======================================================
+    if browser_name == "browserstack":
+
+        USERNAME = os.getenv("BROWSERSTACK_USERNAME")
+        ACCESS_KEY = os.getenv("BROWSERSTACK_ACCESS_KEY")
+
+        if not USERNAME or not ACCESS_KEY:
+            raise Exception("BrowserStack credentials not set in environment variables.")
+
+        options = FirefoxOptions()
+        options.set_capability("browserName", "Firefox")
+        options.set_capability("browserVersion", "latest")
+        options.set_capability("bstack:options", {
+            "os": "OS X",
+            "osVersion": "Monterey",
+            "sessionName": "Behave Mac Firefox Test",
+            "buildName": "Automation Framework Build",
+            "local": "false"
+        })
+
+        context.driver = webdriver.Remote(
+            command_executor=f"https://{USERNAME}:{ACCESS_KEY}@hub-cloud.browserstack.com/wd/hub",
+            options=options
+        )
+
+    # ======================================================
+    # LOCAL CHROME
+    # ======================================================
+    elif browser_name == "chrome":
+
         chrome_options = ChromeOptions()
 
         if headless:
@@ -24,42 +58,55 @@ def browser_init(context, browser_name="chrome", headless=False):
         }
         chrome_options.add_experimental_option("prefs", prefs)
 
-        driver_path = ChromeDriverManager().install()
-        service = ChromeService(driver_path)
-        context.driver = webdriver.Chrome(service=service, options=chrome_options)
+        service = ChromeService(ChromeDriverManager().install())
 
-    elif browser_name.lower() == "firefox":
+        context.driver = webdriver.Chrome(
+            service=service,
+            options=chrome_options
+        )
+
+    # ======================================================
+    # LOCAL FIREFOX
+    # ======================================================
+    elif browser_name == "firefox":
+
         firefox_options = FirefoxOptions()
 
         if headless:
             firefox_options.add_argument("--headless")
 
-        firefox_profile = webdriver.FirefoxProfile()
-        firefox_profile.set_preference("permissions.default.desktop-notification", 2)
-        firefox_profile.set_preference("geo.enabled", False)
-        firefox_options.profile = firefox_profile
+        firefox_options.set_preference("permissions.default.desktop-notification", 2)
+        firefox_options.set_preference("geo.enabled", False)
 
-        driver_path = GeckoDriverManager().install()
-        service = FirefoxService(driver_path)
-        context.driver = webdriver.Firefox(service=service, options=firefox_options)
+        service = FirefoxService(GeckoDriverManager().install())
+
+        context.driver = webdriver.Firefox(
+            service=service,
+            options=firefox_options
+        )
 
     else:
-        raise Exception(f"Browser '{browser_name}' is not supported!")
+        raise Exception(f"Browser '{browser_name}' is not supported.")
 
-    if not headless:
-        context.driver.maximize_window()
+    # ======================================================
+    # COMMON SETUP
+    # ======================================================
 
     context.driver.implicitly_wait(4)
-    context.driver.wait = WebDriverWait(context.driver, timeout=10)
+    context.driver.wait = WebDriverWait(context.driver, 10)
+
+    # Don't maximize BrowserStack or headless sessions
+    if browser_name != "browserstack" and not headless:
+        context.driver.maximize_window()
 
     context.app = Application(context.driver)
 
 
 def before_scenario(context, scenario):
-    # Change these easily:
-    browser_init(context, browser_name="firefox", headless=True)
+    # Change execution mode here:
+    browser_init(context, browser_name="browserstack", headless=False)
 
 
 def after_scenario(context, scenario):
-    if hasattr(context, 'driver'):
+    if hasattr(context, "driver"):
         context.driver.quit()
