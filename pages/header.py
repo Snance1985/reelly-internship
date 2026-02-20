@@ -1,39 +1,32 @@
 from selenium.webdriver.common.by import By
-from pages.base_page import Page
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
+from pages.base_page import Page
 from time import sleep
 
 class Header(Page):
-
-    SETTINGS_OPTION = (By.XPATH, "//div[text()='Settings']")
+    SETTINGS_OPTION = (By.XPATH, "//a[@href='https://soft.reelly.io/settings' and .//span[text()='Settings']]")
     CONTACT_US = (By.CSS_SELECTOR, "a[href='/contact-us']")
 
-    def wait_for_header_to_load(self):
-        self.wait_until_element_present(*self.SETTINGS_OPTION)
-
-    def wait_for_settings_panel(self):
-        self.driver.wait.until(
-            EC.visibility_of_element_located(self.CONTACT_US),
-            message="Settings panel not visible yet"
-        )
-
     def click_settings(self):
-        self.wait_until_clickable_click(*self.SETTINGS_OPTION)
+        elements = self.driver.find_elements(*self.SETTINGS_OPTION)
+        visible_el = next((el for el in elements if el.is_displayed()), None)
+        if not visible_el:
+            raise Exception("No visible Settings element found")
+
+        self.scroll_into_view(visible_el)
+        sleep(1)
+        ActionChains(self.driver).move_to_element(visible_el).click().perform()
+        sleep(2)
         print("Settings clicked")
-        self.wait_for_settings_panel()
-        sleep(5)
 
     def click_contact_us(self):
-        print("Waiting for Contact Us link to be visible and clickable...")
-        self.wait_until_visible(*self.CONTACT_US)
-        self.wait_until_clickable(*self.CONTACT_US)
+        elements = self.driver.find_elements(*self.CONTACT_US)
+        visible_el = next((el for el in elements if el.is_displayed()), None)
+        if not visible_el:
+            raise Exception("No visible Contact Us element found")
 
-        element = self.driver.find_element(*self.CONTACT_US)
-        sleep(4)
-        actions = ActionChains(self.driver)
-        sleep(4)
-        actions.move_to_element(element)
-        actions.click().perform()
-        sleep(4)
+        self.scroll_into_view(visible_el)
+        sleep(1)
+        ActionChains(self.driver).move_to_element(visible_el).click().perform()
+        sleep(2)
         print("Contact Us clicked")

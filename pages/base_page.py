@@ -10,9 +10,6 @@ class Page:
     def open_url(self, end_url=''):
         self.driver.get(f'{self.base_url}{end_url}')
 
-    def get_current_url(self):
-        return self.driver.current_url
-
     def find_element(self, *locator):
         return self.driver.find_element(*locator)
 
@@ -20,48 +17,18 @@ class Page:
         return self.driver.find_elements(*locator)
 
     def click(self, *locator):
-        self.driver.find_element(*locator).click()
+        self.find_element(*locator).click()
 
     def input_text(self, text, *locator):
-        self.driver.find_element(*locator).send_keys(text)
+        self.find_element(*locator).send_keys(text)
 
-    def get_current_window_handle(self):
-        return self.driver.current_window_handle
-
-    def switch_to_new_window(self):
-        self.driver.wait.until(EC.new_window_is_opened)
-        all_windows = self.driver.window_handles
-        print('All window ids: ', all_windows)
-        print('New window id: ', all_windows[1])
-        self.driver.switch_to.window(all_windows[1])
-
-    def switch_to_window_by_id(self, window_id):
-        self.driver.switch_to.window(window_id)
-
-    def scroll_into_view(self, locator):
-        element = self.driver.find_element(*locator)
+    def scroll_into_view(self, element):
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
 
     def wait_until_element_present(self, *locator):
-        from selenium.common.exceptions import TimeoutException
-        try:
-            self.driver.wait.until(
-                EC.presence_of_element_located(locator),
-                message=f'Element not present by locator {locator}'
-            )
-        except TimeoutException:
-            raise Exception(f"Element not present after timeout: {locator}")
-
-    def wait_until_element_invisible(self, *locator):
         self.driver.wait.until(
-            EC.invisibility_of_element_located(locator),
-            message=f'Element still visible by locator {locator}'
-        )
-
-    def wait_until_clickable(self, *locator):
-        self.driver.wait.until(
-            EC.element_to_be_clickable(locator),
-            message=f'Element not clickable by locator {locator}'
+            EC.presence_of_element_located(locator),
+            message=f'Element not present by locator {locator}'
         )
 
     def wait_until_clickable_click(self, *locator):
@@ -70,36 +37,8 @@ class Page:
             message=f'Element not clickable by locator {locator}'
         ).click()
 
-    def wait_until_visible(self, by, value):
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located((by, value))
-        )
-
-    def wait_until_url_contains(self, expected_partial_url):
+    def wait_until_visible(self, *locator):
         self.driver.wait.until(
-            EC.url_contains(expected_partial_url),
-            message=f'Expected {expected_partial_url} not in {self.driver.current_url}.'
+            EC.visibility_of_element_located(locator),
+            message=f'Element not visible by locator {locator}'
         )
-
-    def close_page(self):
-        self.driver.close()
-
-    def verify_partial_text(self, expected_partial_text, *locator):
-        actual_text = self.find_element(*locator).text
-        assert expected_partial_text in actual_text, \
-            f"Expected {expected_partial_text} not in actual {actual_text}"
-
-    def verify_text(self, expected_text, *locator):
-        actual_text = self.find_element(*locator).text
-        assert expected_text == actual_text, \
-            f"Expected {expected_text}, but got actual {actual_text}"
-
-    def verify_url(self, expected_url):
-        actual_url = self.driver.current_url
-        assert actual_url == expected_url, \
-            f'Expected {expected_url}, but got {actual_url}'
-
-    def verify_url_contains(self, expected_partial_url):
-        actual_url = self.driver.current_url
-        assert expected_partial_url in actual_url, \
-            f'Expected {expected_partial_url} not in {actual_url}'
