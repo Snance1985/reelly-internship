@@ -11,4 +11,4 @@ Feature: Contact Us Page
 
   Examples:
     | email                 | password      |
-    | user_email | userpassword |
+    | user_email | user_password |
