@@ -10,7 +10,7 @@ from webdriver_manager.firefox import GeckoDriverManager
 from app.application import Application
 
 
-def browser_init(context, browser_name="browserstack", headless=False):
+def browser_init(context, browser_name="chrome", headless=False):
 
     browser_name = browser_name.lower()
 
