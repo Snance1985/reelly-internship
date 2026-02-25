@@ -11,4 +11,4 @@ Feature: Contact Us Page
 
   Examples:
     | email                 | password      |
-    | spnance1985@gmail.com | W0rthy1sth3L4mb! |
+    | user_email | user_password |

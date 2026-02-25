@@ -48,22 +48,28 @@ def browser_init(context, browser_name="chrome", headless=False):
 
         chrome_options = ChromeOptions()
 
-        if headless:
-            chrome_options.add_argument("--headless=new")
-            chrome_options.add_argument("--window-size=1920,1080")
+        #  Mobile emulation in landscape mode (width > height)
+        mobile_emulation = {
+            "deviceMetrics": {"width": 844, "height": 390, "pixelRatio": 3},  # Landscape iPhone 14 Pro
+            "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
+                         "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
+        }
 
+        chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
+
+        # Optional: force window size (helps with some mobile layouts)
+        chrome_options.add_argument("--window-size=844,390")  # Landscape
+
+        # Disable notifications & geolocation prompts
         prefs = {
             "profile.default_content_setting_values.geolocation": 2,
             "profile.default_content_setting_values.notifications": 2
         }
         chrome_options.add_experimental_option("prefs", prefs)
 
-        service = ChromeService(ChromeDriverManager().install())
-
-        context.driver = webdriver.Chrome(
-            service=service,
-            options=chrome_options
-        )
+        driver_path = ChromeDriverManager().install()
+        service = ChromeService(driver_path)
+        context.driver = webdriver.Chrome(service=service, options=chrome_options)
 
     # ======================================================
     # LOCAL FIREFOX
@@ -104,7 +110,7 @@ def browser_init(context, browser_name="chrome", headless=False):
 
 def before_scenario(context, scenario):
     # Change execution mode here:
-    browser_init(context, browser_name="browserstack", headless=False)
+    browser_init(context, browser_name="chrome", headless=False)
 
 
 def after_scenario(context, scenario):
