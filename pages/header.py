@@ -89,34 +89,35 @@ class Header(Page):
     #     print("Settings clicked")
 
     def click_contact_us(self, retries=5):
-        attempt = 0
-        while attempt < retries:
+        for attempt in range(retries):
             try:
-                # Wait until the element is visible and clickable using the original locator
-                visible_el = WebDriverWait(self.driver, 10).until(
-                    EC.element_to_be_clickable(self.CONTACT_US)
+                # Re-find element fresh on every attempt
+                element = WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located(self.CONTACT_US)
                 )
 
-                # Scroll into view
-                self.scroll_into_view(visible_el)
+                # Scroll into view (important for mobile Safari)
+                self.driver.execute_script(
+                    "arguments[0].scrollIntoView({block: 'center'});", element
+                )
 
-                # Optional: dismiss any alert (location/notification popup)
-                try:
-                    WebDriverWait(self.driver, 2).until(EC.alert_is_present())
-                    alert = self.driver.switch_to.alert
-                    print(f"Alert detected: {alert.text}, dismissing")
-                    alert.dismiss()
-                except:
-                    pass
+                # Wait until visible
+                WebDriverWait(self.driver, 5).until(
+                    EC.visibility_of(element)
+                )
 
-                # Click with ActionChains
-                ActionChains(self.driver).move_to_element(visible_el).click().perform()
+                # Click directly (no ActionChains)
+                element.click()
+
                 print("Contact Us clicked successfully")
                 return
 
-            except Exception as e:
-                attempt += 1
-                print(f"Attempt {attempt}: Element not ready, retrying...")
+            except StaleElementReferenceException:
+                print(f"Attempt {attempt + 1}: Stale element, retrying...")
                 sleep(1)
-                if attempt == retries:
-                    raise Exception("Unable to click Contact Us after multiple retries") from e
+
+            except TimeoutException:
+                print(f"Attempt {attempt + 1}: Timeout waiting for element...")
+                sleep(1)
+
+        raise Exception("Unable to click Contact Us after multiple retries")

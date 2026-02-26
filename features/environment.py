@@ -21,12 +21,12 @@ def browser_init(context, browser_name="chrome", headless=False):
         chrome_options = ChromeOptions()
 
         # Mobile device capabilities
-        chrome_options.set_capability("browserName", "Chrome")
+        chrome_options.set_capability("browserName", "Firefox")
         chrome_options.set_capability("browserVersion", "latest")
         chrome_options.set_capability("bstack:options", {
-            "deviceName": "Pixel 5",
+            "deviceName": "iPhone 12",
             "realMobile": False,
-            "osVersion": "11",
+            "osVersion": "17",
             "sessionName": "Behave Test Emulator",
             "buildName": "Reelly Automation Build",
             "local": "false",
