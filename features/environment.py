@@ -1,87 +1,71 @@
 import os
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.support.wait import WebDriverWait
 from app.application import Application
 
-
 def browser_init(context, browser_name="chrome", headless=False):
-
     browser_name = browser_name.lower()
 
     # ======================================================
-    # LOCAL CHROME (Mobile Emulation Enabled)
+    # BROWSERSTACK MOBILE
     # ======================================================
-    if browser_name == "chrome":
+    if browser_name == "browserstack":
+        USERNAME = os.getenv("BROWSERSTACK_USERNAME")
+        ACCESS_KEY = os.getenv("BROWSERSTACK_ACCESS_KEY")
+        if not USERNAME or not ACCESS_KEY:
+            raise Exception("BrowserStack credentials not set in environment variables.")
 
+        # Chrome mobile emulation options for BrowserStack
         chrome_options = ChromeOptions()
 
-        mobile_emulation = {
-        # Portrait
-            "deviceMetrics": {
-                "width": 390,
-                "height": 844,
-                "pixelRatio": 3.0
-            },
-            "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
-                         "AppleWebKit/605.1.15 (KHTML, like Gecko) "
-                         "Version/16.0 Mobile/15E148 Safari/604.1"
-        }
+        # Mobile device capabilities
+        chrome_options.set_capability("browserName", "Chrome")
+        chrome_options.set_capability("browserVersion", "latest")
+        chrome_options.set_capability("bstack:options", {
+            "deviceName": "Pixel 5",
+            "realMobile": False,
+            "osVersion": "11",
+            "sessionName": "Behave Test Emulator",
+            "buildName": "Reelly Automation Build",
+            "local": "false",
+            # Optional: turn on video recording and logs
+            "debug": True,
+            "networkLogs": True,
+            "consoleLogs": "verbose"
+        })
 
-        # Horizontal
-        """
-        mobile_emulation = {
-            "deviceMetrics": {
-                "width": 844,
-                "height": 390,
-                "pixelRatio": 3.0
-            },
-            "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
-                         "AppleWebKit/605.1.15 (KHTML, like Gecko) "
-                         "Version/16.0 Mobile/15E148 Safari/604.1"
-        }
-        """
-
-        chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
-
-        if headless:
-            chrome_options.add_argument("--headless=new")
-
+        # Block popups: locations & notifications
         prefs = {
             "profile.default_content_setting_values.geolocation": 2,
             "profile.default_content_setting_values.notifications": 2
         }
         chrome_options.add_experimental_option("prefs", prefs)
 
-        driver_path = ChromeDriverManager().install()
-        service = ChromeService(driver_path)
-
-        context.driver = webdriver.Chrome(service=service, options=chrome_options)
-
-    # ======================================================
-    # LOCAL FIREFOX
-    # ======================================================
-    elif browser_name == "firefox":
-
-        firefox_options = FirefoxOptions()
-
-        if headless:
-            firefox_options.add_argument("--headless")
-
-        firefox_options.set_preference("permissions.default.desktop-notification", 2)
-        firefox_options.set_preference("geo.enabled", False)
-
-        service = FirefoxService(GeckoDriverManager().install())
-
-        context.driver = webdriver.Firefox(
-            service=service,
-            options=firefox_options
+        context.driver = webdriver.Remote(
+            command_executor=f"https://{USERNAME}:{ACCESS_KEY}@hub-cloud.browserstack.com/wd/hub",
+            options=chrome_options
         )
+
+    # ======================================================
+    # LOCAL CHROME (PORTRAIT MOBILE)
+    # ======================================================
+    elif browser_name == "chrome":
+        chrome_options = ChromeOptions()
+
+        # Mobile emulation (portrait)
+        mobile_emulation = {"deviceName": "iPhone 14"}
+        chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
+
+        # Block popups
+        prefs = {
+            "profile.default_content_setting_values.geolocation": 2,
+            "profile.default_content_setting_values.notifications": 2
+        }
+        chrome_options.add_experimental_option("prefs", prefs)
+
+        context.driver = webdriver.Chrome(options=chrome_options)
 
     else:
         raise Exception(f"Browser '{browser_name}' is not supported.")
@@ -91,18 +75,18 @@ def browser_init(context, browser_name="chrome", headless=False):
     # ======================================================
     context.driver.implicitly_wait(4)
     context.driver.wait = WebDriverWait(context.driver, 10)
-
-    # Only maximize if NOT headless and NOT mobile emulation
-    if browser_name == "firefox" and not headless:
-        context.driver.maximize_window()
-
     context.app = Application(context.driver)
 
-
 def before_scenario(context, scenario):
-    # 👇 Change execution mode here if needed
-    browser_init(context, browser_name="chrome", headless=False)
-
+    max_attempts = 2
+    for attempt in range(max_attempts):
+        try:
+            browser_init(context, browser_name="browserstack", headless=False)
+            break
+        except Exception as e:
+            if attempt == max_attempts - 1:
+                raise e
+            print(f"Retrying BrowserStack init due to error: {e}")
 
 def after_scenario(context, scenario):
     if hasattr(context, "driver"):

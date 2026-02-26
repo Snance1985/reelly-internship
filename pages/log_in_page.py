@@ -37,3 +37,4 @@ class LogInPage(Page):
 
         # Switch back to main content
         self.driver.switch_to.default_content()
+        sleep(2)
