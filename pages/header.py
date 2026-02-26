@@ -1,5 +1,6 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
 from time import sleep
 from pages.base_page import Page
@@ -7,10 +8,36 @@ from pages.base_page import Page
 class Header(Page):
     SETTINGS_OPTION = (By.XPATH, "//a[@href='https://soft.reelly.io/settings' and .//span[text()='Settings']]")
     CONTACT_US = (By.CSS_SELECTOR, "a[href='/contact-us']")
+    MARKET_OFFERS_OPTION = (By.XPATH, "//a[.//span[contains(text(),'Market Offers')]]")
+    MENU_BUTTON = (By.XPATH, "//div[text()='Menu']")
 
 
     def wait_for_header_to_load(self):
         self.wait_until_element_present(*self.SETTINGS_OPTION)
+
+    def click_market_offers(self):
+        # Wait for element to be present
+        element = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located(self.MARKET_OFFERS_OPTION)
+        )
+        # Scroll into view (important for mobile)
+        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", element)
+        # Wait until clickable
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable(self.MARKET_OFFERS_OPTION)
+        )
+        # Click
+        element.click()
+
+    def click_menu(self):
+        element = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located(self.MENU_BUTTON)
+        )
+        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", element)
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable(self.MENU_BUTTON)
+        )
+        element.click()
 
     def wait_for_settings_panel(self):
         self.driver.wait.until(
@@ -19,7 +46,7 @@ class Header(Page):
         )
 
     def click_settings(self):
-        sleep(4)
+        sleep(5)
         # Wait until element is present
         self.wait_until_element_present(*self.SETTINGS_OPTION)
 

@@ -14,11 +14,23 @@ def step_login(context, email, password):
     context.app.log_in_page.login(email, password)
     sleep(2)  # give time for redirect after login
 
-@when('Click on the settings option')
-def step_click_settings(context):
-    context.header = context.app.header
-    context.header.click_settings()
-    sleep(2)  # wait for settings panel
+
+@when('Click on the Market Offers option')
+def step_click_market_offers(context):
+    context.app.header.click_market_offers()
+
+
+@when('Click on the Menu option')
+def step_click_menu(context):
+    context.app.header.click_menu()
+
+
+
+# @when('Click on the settings option')
+# def step_click_settings(context):
+#     context.header = context.app.header
+#     context.header.click_settings()
+#     sleep(2)  # wait for settings panel
 
 @when('Click on Contact Us option')
 def step_click_contact(context):
